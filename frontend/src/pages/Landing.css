@@ -1,0 +1,373 @@
+/* ==========================================================================
+   TrustGate Landing Page — Print-Inspired & Document Forensics
+   Quiet section rhythm, hairline rules, zero gradients on typography,
+   exact tokens from design system.
+   ID Card animation preserved exactly as requested by user.
+   ========================================================================== */
+
+.landing-page {
+  background-color: var(--paper, #F2F4F7);
+  color: var(--ink, #16213A);
+  font-family: var(--font-sans, 'Schibsted Grotesk', sans-serif);
+  min-height: 100vh;
+}
+
+.landing-container {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+@media (max-width: 640px) {
+  .landing-container {
+    padding: 0 20px;
+  }
+}
+
+/* ── Hero Section ────────────────────────────────────────────────────────── */
+.landing-hero {
+  padding: 48px 0 56px;
+  border-bottom: 1px solid var(--rule, #D8DDE5);
+  background-color: var(--paper, #F2F4F7);
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 48px;
+  align-items: center;
+}
+
+@media (max-width: 960px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}
+
+.hero-content {
+  max-width: 580px;
+}
+
+.hero-audience-tag {
+  display: inline-block;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--ink-2, #4A5470);
+  margin-bottom: 16px;
+}
+
+.hero-headline {
+  font-size: 2.5rem;
+  line-height: 1.15;
+  font-weight: 700;
+  color: var(--ink, #16213A);
+  margin-bottom: 18px;
+  letter-spacing: -0.02em;
+}
+
+.hero-headline .headline-soft {
+  display: block;
+  font-weight: 400;
+  color: var(--ink-2, #4A5470);
+  margin-top: 4px;
+}
+
+@media (max-width: 640px) {
+  .hero-headline {
+    font-size: 2rem;
+  }
+}
+
+.hero-paragraph {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--ink-2, #4A5470);
+  margin-bottom: 24px;
+  max-width: 54ch;
+}
+
+.hero-audience-callout {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink, #16213A);
+  margin-bottom: 24px;
+}
+
+.hero-cta-group {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.hero-specimen-note {
+  font-size: 0.82rem;
+  color: var(--ink-2, #4A5470);
+}
+
+/* ── PRESERVED ID CARD ANIMATION STYLES (User Requested) ────────────────── */
+.id-card-mock {
+  position: relative;
+  z-index: 1;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.id-card-mock .card-body {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(160deg, #171C30 0%, #0F1322 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 50px rgba(22, 33, 58, 0.18);
+  padding: 24px 24px 20px;
+}
+
+.id-card-mock .card-header {
+  background: linear-gradient(90deg, rgba(47,111,237,0.55), rgba(110,161,255,0.4));
+  margin: -24px -24px 18px;
+  padding: 10px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.id-card-mock .scan-line {
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(110,161,255,0.9), rgba(143,182,255,0.9), transparent);
+  box-shadow: 0 0 12px rgba(110,161,255,0.6);
+}
+
+.id-card-mock .signal-panel {
+  margin-top: 16px;
+  background: #0C1120;
+  border: 1px solid rgba(110,161,255,0.18);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  min-height: 190px;
+}
+
+/* ── Results Band (Hard Stop) ────────────────────────────────────────────── */
+.results-band {
+  padding: 60px 0;
+  background-color: var(--surface, #FFFFFF);
+  border-bottom: 1px solid var(--rule, #D8DDE5);
+  text-align: center;
+}
+
+.results-quiet-line {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--ink, #16213A);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 10px;
+}
+
+.results-caveat {
+  font-size: 0.82rem;
+  color: var(--ink-2, #4A5470);
+}
+
+/* ── Three Cases Section (Asymmetric Alternating) ────────────────────────── */
+.cases-section {
+  padding: 80px 0;
+  border-bottom: 1px solid var(--rule, #D8DDE5);
+}
+
+.cases-list {
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+  margin-top: 40px;
+}
+
+.case-row {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 40px;
+  align-items: center;
+  background-color: var(--surface, #FFFFFF);
+  border: 1px solid var(--rule, #D8DDE5);
+  border-radius: var(--radius-md, 8px);
+  padding: 28px;
+}
+
+.case-row.reverse {
+  grid-template-columns: 0.85fr 1.15fr;
+}
+
+@media (max-width: 840px) {
+  .case-row,
+  .case-row.reverse {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+.case-image-wrap {
+  position: relative;
+  border: 1px solid var(--rule, #D8DDE5);
+  border-radius: var(--radius-sm, 4px);
+  overflow: hidden;
+  background-color: var(--paper, #F2F4F7);
+}
+
+.case-image-wrap img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.case-text-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.case-tag {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--review, #A86200);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.case-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ink, #16213A);
+}
+
+.case-sentence {
+  font-size: 0.95rem;
+  color: var(--ink-2, #4A5470);
+  line-height: 1.55;
+}
+
+.case-stamp-row {
+  margin-top: 8px;
+}
+
+/* ── Why Genuine People Aren't Blocked ───────────────────────────────────── */
+.genuine-section {
+  padding: 80px 0;
+  background-color: var(--surface, #FFFFFF);
+  border-bottom: 1px solid var(--rule, #D8DDE5);
+}
+
+.genuine-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-top: 40px;
+}
+
+.genuine-item {
+  border: 1px solid var(--rule, #D8DDE5);
+  border-radius: var(--radius-sm, 4px);
+  padding: 20px;
+  background-color: var(--paper, #F2F4F7);
+}
+
+.genuine-item-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink, #16213A);
+  margin-bottom: 8px;
+}
+
+.genuine-item-desc {
+  font-size: 0.88rem;
+  color: var(--ink-2, #4A5470);
+  line-height: 1.5;
+}
+
+/* ── How It Works ────────────────────────────────────────────────────────── */
+.how-section {
+  padding: 80px 0;
+  border-bottom: 1px solid var(--rule, #D8DDE5);
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 32px;
+  margin-top: 40px;
+}
+
+.step-card {
+  background-color: var(--surface, #FFFFFF);
+  border: 1px solid var(--rule, #D8DDE5);
+  border-radius: var(--radius-md, 8px);
+  padding: 24px;
+}
+
+.step-number {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--stamp, #2447B8);
+  margin-bottom: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.step-heading {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink, #16213A);
+  margin-bottom: 8px;
+}
+
+.step-desc {
+  font-size: 0.88rem;
+  color: var(--ink-2, #4A5470);
+  line-height: 1.55;
+}
+
+/* ── Integration Section ─────────────────────────────────────────────────── */
+.integration-section {
+  padding: 80px 0;
+  background-color: var(--surface, #FFFFFF);
+  border-bottom: 1px solid var(--rule, #D8DDE5);
+}
+
+.integration-box {
+  max-width: 680px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.code-window {
+  margin: 32px 0 20px;
+  background-color: #0F1322;
+  border: 1px solid #232D48;
+  border-radius: var(--radius-sm, 4px);
+  text-align: left;
+  overflow: hidden;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+}
+
+.code-header {
+  padding: 8px 16px;
+  background-color: #171D30;
+  border-bottom: 1px solid #232D48;
+  color: #8C99B8;
+  font-size: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.code-body {
+  padding: 16px 20px;
+  color: #E2E8F0;
+  overflow-x: auto;
+  line-height: 1.55;
+}

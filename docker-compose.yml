@@ -1,0 +1,23 @@
+services:
+  trustgate-backend:
+    build: .
+    ports: ["8000:8000"]
+    env_file: .env
+    volumes: ["trustgate-data:/data"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "localhost:8000/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  trustgate-frontend:
+    build: ./frontend
+    ports: ["3000:3000"]
+    depends_on:
+      trustgate-backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  trustgate-data:

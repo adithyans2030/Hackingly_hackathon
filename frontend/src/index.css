@@ -1,0 +1,560 @@
+/* ==========================================================================
+   TrustGate — Print-Inspired Verification Identity
+   Tokens: --paper, --surface, --ink, --ink-2, --rule, --stamp, verdicts
+   Zero gradients (except user-requested ID card mockup), hairline rules,
+   Schibsted Grotesk typography, tabular figures.
+   ========================================================================== */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* ── Core Surfaces & Text ── */
+  --paper:          #F2F4F7;  /* Page background */
+  --surface:        #FFFFFF;  /* Panels and cards */
+  --ink:            #16213A;  /* Primary text */
+  --ink-2:          #4A5470;  /* Secondary text & labels */
+  --rule:           #D8DDE5;  /* Hairline borders */
+
+  /* ── The ONE Accent ── */
+  --stamp:          #2447B8;  /* Primary button, links, focus rings */
+
+  /* ── Verdicts ── */
+  --ok:             #1C7C54;  /* APPROVED */
+  --review:         #A86200;  /* NEEDS_REVIEW */
+  --bad:            #B42318;  /* REJECTED (displayed as "Not eligible") */
+  --fix:            #6B4FA0;  /* RESUBMIT */
+
+  /* ── Border Radius (max two values) ── */
+  --radius-sm:      4px;      /* Buttons, tags, inputs */
+  --radius-md:      8px;      /* Containers and cards */
+
+  /* ── Compatibility Aliases ── */
+  --bg-base:        var(--paper);
+  --bg-deep:        #E8ECF2;
+  --bg-surface:     var(--surface);
+  --bg-panel:       var(--surface);
+  --bg-panel-h:     #EBF0F7;
+  --bg-card:        var(--surface);
+  --bg-card-2:      #F8FAFC;
+  --border-soft:    var(--rule);
+
+  --text-primary:   var(--ink);
+  --text-secondary: var(--ink-2);
+  --text-muted:     #6E7891;
+
+  --brand:          var(--stamp);
+  --brand-light:    var(--stamp);
+  --brand-dim:      rgba(36, 71, 184, 0.08);
+  --brand-glow:     transparent;
+
+  --green:          var(--ok);
+  --amber:          var(--review);
+  --red:            var(--bad);
+  --violet:         var(--fix);
+  --cyan:           #0E7490;
+
+  --font-sans:      'Schibsted Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display:   'Schibsted Grotesk', sans-serif;
+  --font-mono:      'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Hairline borders replacing shadows */
+  --shadow-sm:      none;
+  --shadow-md:      none;
+  --shadow-lg:      none;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--paper);
+  color: var(--ink);
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tabular numerals for figures */
+.tabular-nums,
+[data-tabular="true"],
+.stat-value,
+.metric-figure,
+.timestamp,
+.id-number {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ── Focus States ── */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--stamp);
+  outline-offset: 2px;
+}
+
+/* ── Typography Scale ── */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+}
+
+h1 { font-size: 2.25rem; line-height: 1.15; }
+h2 { font-size: 1.75rem; }
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1rem; }
+
+p {
+  color: var(--ink-2);
+  line-height: 1.6;
+  max-width: 75ch;
+}
+
+/* ── Quiet Section Header Rhythm ── */
+.section-label {
+  font-size: 0.85rem;
+  color: var(--ink-2);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.section-heading {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.25;
+  margin-bottom: 12px;
+  letter-spacing: -0.015em;
+}
+
+.section-heading .soft-line {
+  display: block;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+
+.section-intro {
+  font-size: 0.95rem;
+  color: var(--ink-2);
+  max-width: 65ch;
+  margin-bottom: 32px;
+}
+
+/* ── Standard Containers & Panels ── */
+.container {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 0 20px;
+  }
+}
+
+.panel {
+  background-color: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-md);
+  padding: 24px;
+}
+
+.card {
+  background-color: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+
+/* ── Form Elements ── */
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background-color: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  transition: border-color 0.15s ease;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: var(--stamp);
+  outline: none;
+}
+
+.textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.form-help {
+  font-size: 0.78rem;
+  color: var(--ink-2);
+  margin-top: 4px;
+}
+
+/* ── Buttons (One filled button rule) ── */
+.btn-primary,
+.btn-stamp-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background-color: var(--stamp);
+  color: #FFFFFF;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.btn-primary:hover,
+.btn-stamp-primary:hover {
+  opacity: 0.92;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  background-color: transparent;
+  color: var(--stamp);
+  font-weight: 500;
+  font-size: 0.9rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-deep);
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--stamp);
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  padding: 0;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Decision Badges & Chips ── */
+.verdict-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: var(--radius-sm);
+  border: 1px solid currentColor;
+  background-color: var(--surface);
+}
+
+.verdict-chip.APPROVED {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
+.verdict-chip.NEEDS_REVIEW {
+  color: var(--review);
+  border-color: var(--review);
+}
+
+.verdict-chip.REJECTED {
+  color: var(--bad);
+  border-color: var(--bad);
+}
+
+.verdict-chip.RESUBMIT {
+  color: var(--fix);
+  border-color: var(--fix);
+}
+
+/* ── Navigation ── */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background-color: rgba(242, 244, 247, 0.96);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--rule);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+}
+
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.logo-mark {
+  width: 28px;
+  height: 28px;
+  background-color: var(--ink);
+  color: #FFFFFF;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.navbar-link {
+  font-size: 0.88rem;
+  color: var(--ink-2);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 6px 2px;
+  position: relative;
+  transition: color 0.15s ease;
+}
+
+.navbar-link:hover {
+  color: var(--ink);
+}
+
+.navbar-link.active {
+  color: var(--stamp);
+  font-weight: 600;
+}
+
+.navbar-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -18px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--stamp);
+}
+
+.navbar-mobile-actions {
+  display: none;
+}
+
+.navbar-hamburger {
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  padding: 6px;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0 20px;
+  }
+  .navbar-links {
+    display: none;
+  }
+  .navbar-mobile-actions {
+    display: block;
+  }
+}
+
+/* Mobile Drawer */
+.mobile-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(22, 33, 58, 0.4);
+  z-index: 105;
+}
+
+.mobile-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 280px;
+  background-color: var(--surface);
+  border-left: 1px solid var(--rule);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-drawer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.mobile-nav-link {
+  font-size: 1rem;
+  color: var(--ink-2);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.mobile-nav-link.active {
+  color: var(--stamp);
+  font-weight: 600;
+}
+
+/* ── Plain Figures on Hairlines (Metrics & Stats) ── */
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-md);
+  background-color: var(--surface);
+}
+
+.metrics-cell {
+  padding: 24px 20px;
+  border-right: 1px solid var(--rule);
+}
+
+.metrics-cell:last-child {
+  border-right: none;
+}
+
+@media (max-width: 768px) {
+  .metrics-cell {
+    border-right: none;
+    border-bottom: 1px solid var(--rule);
+  }
+  .metrics-cell:last-child {
+    border-bottom: none;
+  }
+}
+
+.metric-figure {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.1;
+  margin-bottom: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-label {
+  font-size: 0.8rem;
+  color: var(--ink-2);
+  line-height: 1.35;
+}
+
+/* ── Tables on Hairlines ── */
+.print-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  background-color: var(--surface);
+}
+
+.print-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  border-bottom: 1px solid var(--rule);
+  background-color: var(--paper);
+}
+
+.print-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink);
+}
+
+.print-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Loading & Empty States */
+.loading-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  gap: 12px;
+  color: var(--ink-2);
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--rule);
+  border-top-color: var(--stamp);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

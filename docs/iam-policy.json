@@ -1,0 +1,11 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Sid": "Textract", "Effect": "Allow", "Action": ["textract:AnalyzeDocument", "textract:DetectDocumentText"], "Resource": "*" },
+    { "Sid": "Rekognition", "Effect": "Allow",
+      "Action": ["rekognition:DetectFaces", "rekognition:CompareFaces", "rekognition:SearchFacesByImage",
+                 "rekognition:IndexFaces", "rekognition:CreateCollection", "rekognition:DeleteFaces"],
+      "Resource": "*" },
+    { "Sid": "Bedrock", "Effect": "Allow", "Action": ["bedrock:InvokeModel"], "Resource": "*" }
+  ]
+}

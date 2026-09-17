@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TrustGate · ID verification for Hackingly</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='3' y='6' width='26' height='20' rx='3' fill='%2316213a'/><path d='M9 16l4 4 9-9' stroke='%23fff' stroke-width='3' fill='none'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="bar">
+    <a class="wordmark" href="#/queue"><b>TrustGate</b><span>ID checks for Hackingly</span></a>
+    <nav class="nav" aria-label="Main">
+      <a href="#/queue" data-route="queue">Review queue</a>
+      <a href="#/register" data-route="register">Registration form</a>
+      <a href="#/metrics" data-route="metrics">Metrics</a>
+    </nav>
+    <div class="spacer"></div>
+    <label class="sr-only" for="event">Event</label>
+    <select id="event"></select>
+  </header>
+  <main id="app" tabindex="-1"></main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

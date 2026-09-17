@@ -1,0 +1,192 @@
+{
+  "events": {
+    "aibc-blr": {
+      "event_id": "aibc-blr",
+      "name": "AI Build Challenge Bengaluru",
+      "event_date": "2026-09-18",
+      "min_age": 18
+    },
+    "campus-hack": {
+      "event_id": "campus-hack",
+      "name": "Campus Hack (students only)",
+      "event_date": "2026-10-10",
+      "min_age": 16,
+      "student_only": true
+    }
+  },
+  "cases": [
+    {
+      "file": "01_aadhaar_genuine.jpg",
+      "event_id": "aibc-blr",
+      "form": {
+        "name": "Priya Sharma",
+        "email": "priya@example.com",
+        "institution": ""
+      },
+      "expect": "APPROVED",
+      "scenario": "genuine"
+    },
+    {
+      "file": "02_aadhaar_genuine_name_variant.jpg",
+      "event_id": "aibc-blr",
+      "form": {
+        "name": "R. Arjun",
+        "email": "arjun@example.com"
+      },
+      "expect": "APPROVED",
+      "scenario": "genuine: initials on form"
+    },
+    {
+      "file": "03_pan_genuine.jpg",
+      "event_id": "aibc-blr",
+      "form": {
+        "name": "Rahul Verma",
+        "email": "rahul@example.com"
+      },
+      "expect": "APPROVED",
+      "scenario": "genuine"
+    },
+    {
+      "file": "04_college_genuine.jpg",
+      "event_id": "campus-hack",
+      "form": {
+        "name": "Neha Iyer",
+        "email": "neha@example.com",
+        "institution": "RV College of Engineering"
+      },
+      "expect": "APPROVED",
+      "scenario": "genuine student"
+    },
+    {
+      "file": "05_aadhaar_year_only.jpg",
+      "event_id": "aibc-blr",
+      "form": {
+        "name": "Mohd Farhan Shaikh",
+        "email": "farhan@example.com"
+      },
+      "expect": "APPROVED",
+      "scenario": "genuine: year-of-birth card, transliterated name"
+    },
+    {
+      "file": "06_aadhaar_dob_edited_qr_mismatch.jpg",
+      "event_id": "aibc-blr",
+      "form": {
+        "name": "Kabir Das",
+        "email": "kabir@example.com"
+      },
+      "expect": "NOT_APPROVED",
+      "scenario": "fraud: printed DOB edited, QR shows real (underage) DOB"
+    },
+    {
+      "file": "07_aadhaar_dob_spliced.jpg",
+      "event_id": "aibc-blr",
+      "form": {
+        "name": "Ishaan Rao",
+        "email": "ishaan@example.com"
+      },
+      "expect": "NOT_APPROVED",
+      "scenario": "fraud: DOB digits pasted over (ELA)"
+    },
+    {
+      "file": "08_aadhaar_reused_other_name.jpg",
+      "event_id": "aibc-blr",
+      "form": {
+        "name": "Karan Mehta",
+        "email": "karan@example.com"
+      },
+      "expect": "NOT_APPROVED",
+      "scenario": "fraud: Priya's Aadhaar reused by someone else"
+    },
+    {
+      "file": "09_aadhaar_same_image_other_name.jpg",
+      "event_id": "campus-hack",
+      "form": {
+        "name": "Sneha Kulkarni",
+        "email": "sneha@example.com"
+      },
+      "expect": "NOT_APPROVED",
+      "scenario": "fraud: identical image uploaded under another name"
+    },
+    {
+      "file": "10_edited_in_photoshop.jpg",
+      "event_id": "aibc-blr",
+      "form": {
+        "name": "Vikram Nair",
+        "email": "vikram@example.com"
+      },
+      "expect": "NOT_APPROVED",
+      "scenario": "suspicious: saved by Photoshop"
+    },
+    {
+      "file": "11_screen_recapture.jpg",
+      "event_id": "aibc-blr",
+      "form": {
+        "name": "Ananya Ghosh",
+        "email": "ananya@example.com"
+      },
+      "expect": "NOT_APPROVED",
+      "scenario": "suspicious: photo of a screen"
+    },
+    {
+      "file": "12_invented_aadhaar_number.jpg",
+      "event_id": "aibc-blr",
+      "form": {
+        "name": "Rohit Jain",
+        "email": "rohit@example.com"
+      },
+      "expect": "NOT_APPROVED",
+      "scenario": "fraud: number fails Verhoeff checksum"
+    },
+    {
+      "file": "13_name_mismatch.jpg",
+      "event_id": "aibc-blr",
+      "form": {
+        "name": "Aditya Kapoor",
+        "email": "aditya@example.com"
+      },
+      "expect": "NOT_APPROVED",
+      "scenario": "fraud: someone else's PAN"
+    },
+    {
+      "file": "14_underage_genuine.jpg",
+      "event_id": "aibc-blr",
+      "form": {
+        "name": "Meera Pillai",
+        "email": "meera@example.com"
+      },
+      "expect": "REJECTED",
+      "scenario": "ineligible: 15 years old"
+    },
+    {
+      "file": "15_college_expired.jpg",
+      "event_id": "campus-hack",
+      "form": {
+        "name": "Siddharth Rao",
+        "email": "sid@example.com",
+        "institution": "PES University"
+      },
+      "expect": "NOT_APPROVED",
+      "scenario": "student ID expired -> review, not reject"
+    },
+    {
+      "file": "16_blurry.jpg",
+      "event_id": "aibc-blr",
+      "form": {
+        "name": "Pooja Das",
+        "email": "pooja@example.com"
+      },
+      "expect": "RESUBMIT",
+      "scenario": "bad photo"
+    },
+    {
+      "file": "17_pan_for_student_event.jpg",
+      "event_id": "campus-hack",
+      "form": {
+        "name": "Rahul Verma",
+        "email": "rahul@example.com"
+      },
+      "expect": "RESUBMIT",
+      "scenario": "wrong document for student-only event"
+    }
+  ]
+}
