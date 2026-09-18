@@ -42,16 +42,22 @@ Each fraud case is caught by the detector designed for it: QR mismatch, JPEG gho
 
 ```bash
 # system deps: Tesseract + zbar
-#   macOS:  brew install tesseract zbar
-#   Ubuntu: sudo apt install tesseract-ocr libzbar0
+#   macOS:   brew install tesseract zbar
+#   Ubuntu:  sudo apt install tesseract-ocr libzbar0
+#   Windows: winget install UB-Mannheim.TesseractOCR, then add
+#            C:\Program Files\Tesseract-OCR to PATH. If winget stalls, the
+#            same installer is at github.com/UB-Mannheim/tesseract/releases.
+#            zbar needs nothing: the pyzbar wheel bundles libzbar.
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 python scripts/download_models.py        # offline face matching (optional)
+python scripts/make_dev_cert.py          # dev key so QR signatures actually verify
+#   then set UIDAI_CERT_PATH=dev_certs/uidai_dev_cert.pem in .env
 
 python scripts/generate_samples.py       # 17 labelled specimen cards
 python scripts/evaluate.py --keep-db     # measure + load them into the dashboard
-pytest -q                                # 18 unit tests
+pytest -q                                # 19 unit tests
 
 uvicorn app.api:app --reload
 # dashboard      http://localhost:8000/
@@ -60,6 +66,32 @@ uvicorn app.api:app --reload
 ```
 
 Or run `docker compose up --build`.
+
+**`--keep-db` appends.** Re-running it against a database that already holds these
+cases makes every genuine card look like a reused ID, and the score collapses. Delete
+`data/` first for a clean measurement.
+
+**Why the dev certificate.** The Secure QR is signed by UIDAI, and offline there is no
+way to produce a UIDAI-signed payload, so the sample generator would otherwise emit an
+unsigned one and the signature check — the strongest check in the pipeline — would never
+run. `make_dev_cert.py` creates a self-signed key that the generator signs with, so the
+real verification path is exercised end to end. The key is git-ignored. In production
+`UIDAI_CERT_PATH` points at UIDAI's certificate and these dev payloads correctly stop
+verifying.
+
+> **Run `make_dev_cert.py` *before* `generate_samples.py`, and re-run the generator
+> whenever you create a new key.** Each machine's key is different, so the committed
+> specimen cards were signed with someone else's. Pointing `UIDAI_CERT_PATH` at your own
+> cert without regenerating them makes every Aadhaar sample fail signature verification
+> and show up as a critical "not signed by UIDAI" — which is correct behaviour reading a
+> genuinely foreign signature, but it is not what you want mid-demo. Leaving
+> `UIDAI_CERT_PATH` empty is the safe fallback: the check reports "not checked" and
+> nothing is penalised.
+
+**Pinned dependencies.** `numpy` and `Pillow` are pinned exactly because they decide the
+exact bytes `generate_samples.py` writes, and a different version re-encodes all 17 cards
+and can shift OCR results. `opencv-python-headless` is capped below 5.0, which removed
+`cv2.CascadeClassifier`. Bump any of them deliberately and re-run `evaluate.py`.
 
 **Face checks on samples:** the generated cards use cartoon portraits, so face checks show as "not checked". To demo face matching, run `python scripts/generate_samples.py --faces ./my_faces/` with photos of your teammates (with their consent). The selfie cases will then run the full face match and the face-reuse search.
 
@@ -100,6 +132,7 @@ Every stage emits `Signal(name, category, severity, score, reason, weight)`. Fus
 
 - **Three soft exits before any rejection.** A bad photo leads to RESUBMIT, and any doubt leads to NEEDS_REVIEW. REJECTED requires a DOB read with at least 85% confidence *and* no tamper, duplicate, or identity concerns.
 - **A checksum failure is a warning, not a rejection.** A single misread digit also fails Verhoeff.
+- **A field that couldn't be read is not evidence of tampering.** Tesseract read one specimen's "Arjun Ramesh" as "Cyl", and comparing that against the QR name looked exactly like an edited card. Below a confidence floor the printed name counts as unread, and a UIDAI-signed QR name outranks a low-confidence OCR read.
 - **Indian names.** Initials ("R. Arjun" matches "Arjun Ramesh"), token order, dropped suffixes (Devi, Kumar), and transliteration variants (Mohd/Mohammed, Laxmi/Lakshmi) are all handled. A lone shared surname never counts as a match.
 - **Year-only Aadhaar.** If the person is eligible at both possible ages, they're approved. If it's borderline, the case goes to review, never to rejection.
 - **Returning participants.** The same ID and same person at another event is normal. Only the same ID under a *different* name is flagged.
@@ -132,6 +165,7 @@ The LLM only (a) fills fields the parser missed, where every value must appear i
 - Stored images are **masked**: the first 8 Aadhaar digits are blacked out on the card *and* on the ELA heatmap, and old-format QR codes (which hold the full number) are blurred. Raw uploads are kept only if `KEEP_RAW_IMAGES=true`.
 - Consent is required on every call. `DELETE /v1/verifications/{id}` erases the record, fingerprints, face embedding, and images.
 - Every decision and override is written to an audit log.
+- **Set `ORGANIZER_KEY` before loading real data.** It requires an `X-Organizer-Key` header on the review queue, case detail, stored images, metrics, and audit log — the endpoints that expose applicants' names, emails, masked IDs, and ID photographs. Left empty those endpoints are open, which is fine for a laptop demo and is not acceptable with participants' documents in the database. `API_KEY` separately guards `/v1/verify`.
 
 ---
 
@@ -146,7 +180,7 @@ app/
   pipeline/               quality · extraction · aadhaar_qr · validators · tamper
                           duplicates · identity · rules · fusion · orchestrator
   static/                 dashboard + participant registration form (no build step)
-scripts/                  generate_samples · evaluate · download_models
+scripts/                  generate_samples · evaluate · download_models · make_dev_cert
 tests/                    unit tests
 docs/                     INTEGRATION.md · iam-policy.json
 ```
@@ -158,8 +192,10 @@ docs/                     INTEGRATION.md · iam-policy.json
 1. Get Hackingly's anonymised samples. Add them to a manifest (same format as `samples/manifest.json`) and run `evaluate.py`.
 2. Tune `BLUR_THRESHOLD`, `RECAPTURE_PEAK`, and `APPROVE_THRESHOLD` until genuine false rejects stay at 0.
 3. Switch to `OCR_PROVIDER=textract` and wire in their real DOB function.
-4. Add teammates' faces (with consent) to demo face match and face reuse.
-5. Freeze features two hours before judging and rehearse the demo three times.
+4. Point `UIDAI_CERT_PATH` at UIDAI's real certificate instead of the dev one, and
+   set `ORGANIZER_KEY` before any real participant data goes in.
+5. Add teammates' faces (with consent) to demo face match and face reuse.
+6. Freeze features two hours before judging and rehearse the demo three times.
 
 ## 3-minute demo
 
@@ -171,7 +207,8 @@ docs/                     INTEGRATION.md · iam-policy.json
    - *Sneha Kulkarni:* "Also used by Priya Sharma."
    - Click **Approve** on one case to show the override landing in the audit log.
 4. **Metrics:** 0 genuine participants rejected, 9/9 frauds stopped, and a human always sees fraud.
-5. **Integration:** one API call, zero changes to the Textract pipeline, and webhooks.
+5. **Integration:** one API call, zero changes to the Textract pipeline, and webhooks
+   (or `async_mode=true` plus `GET /v1/verifications/{id}/status` to poll).
 6. **Roadmap:** DigiLocker-verified documents, Rekognition Face Liveness, and threshold learning from organizer overrides.
 
 ### Likely judge questions
