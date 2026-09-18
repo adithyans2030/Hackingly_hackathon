@@ -93,7 +93,31 @@ exact bytes `generate_samples.py` writes, and a different version re-encodes all
 and can shift OCR results. `opencv-python-headless` is capped below 5.0, which removed
 `cv2.CascadeClassifier`. Bump any of them deliberately and re-run `evaluate.py`.
 
-**Face checks on samples:** the generated cards use cartoon portraits, so face checks show as "not checked". To demo face matching, run `python scripts/generate_samples.py --faces ./my_faces/` with photos of your teammates (with their consent). The selfie cases will then run the full face match and the face-reuse search.
+### Face matching demo (teammate photos)
+
+The generated cards use cartoon portraits, so face checks show as "not checked". Real
+photos turn on both the face match against the selfie and the 1:N face-reuse search.
+
+```bash
+mkdir my_faces                                     # git-ignored
+# drop in 8 photos, one person per file, named so the order is stable
+python scripts/check_faces.py ./my_faces           # verify before you rely on them
+python scripts/generate_samples.py --faces ./my_faces
+rm -rf data && python scripts/evaluate.py --keep-db
+```
+
+`check_faces.py` rejects a photo with no detectable face or a face under 80px, warns on a
+group photo (the largest face wins), and warns when two people score as each other — any
+of which quietly degrades the demo.
+
+**Use 8 different people.** The eight portrait slots are cycled, so fewer photos make two
+*genuine* cases share a face. The face-reuse search then correctly reports the same person
+registering under two names, and cases that should be approved land in review instead. The
+generator prints which cases will collide. Cases 08 and 09 reuse Priya's face on purpose —
+that is the reuse demo, and it works regardless.
+
+**Consent.** These are real faces. Use only photos each person agreed to, and delete
+`my_faces/` and `data/` after the event.
 
 ### Production mode (AWS)
 
@@ -180,7 +204,7 @@ app/
   pipeline/               quality · extraction · aadhaar_qr · validators · tamper
                           duplicates · identity · rules · fusion · orchestrator
   static/                 dashboard + participant registration form (no build step)
-scripts/                  generate_samples · evaluate · download_models · make_dev_cert
+scripts/                  generate_samples · evaluate · download_models · make_dev_cert · check_faces
 tests/                    unit tests
 docs/                     INTEGRATION.md · iam-policy.json
 ```

@@ -21,7 +21,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app.pipeline.aadhaar_qr import build_secure_payload  # noqa: E402
@@ -205,12 +205,40 @@ def moire(jpeg: bytes) -> bytes:
     buf = io.BytesIO(); Image.fromarray(out).save(buf, "JPEG", quality=90); return buf.getvalue()
 
 
+FACE_SLOTS = 8
+
+# Slots held by a case the evaluation expects to be APPROVED. Two of these sharing one
+# photo means the same face appears under two different names, the 1:N face search
+# reports reuse, and a genuine case lands in review.
+GENUINE_SLOTS = {0: "01 Priya Sharma", 1: "02 Arjun Ramesh", 2: "03 Rahul Verma",
+                 3: "04 Neha Iyer", 4: "05 Farhan Shaikh"}
+
+
 def load_faces(folder: str | None) -> list[Image.Image | None]:
+    """Load one portrait per slot.
+
+    Phone photos arrive rotated and occasionally in a mode the card renderer cannot
+    paste, so normalise orientation and colour here rather than failing mid-render.
+    """
     if not folder:
-        return [None] * 8
-    files = sorted(p for p in Path(folder).expanduser().iterdir() if p.suffix.lower() in (".jpg", ".jpeg", ".png"))
-    faces = [Image.open(p) for p in files]
-    return (faces * 8)[:8] if faces else [None] * 8
+        return [None] * FACE_SLOTS
+    path = Path(folder).expanduser()
+    if not path.is_dir():
+        raise SystemExit(f"--faces: {path} is not a folder")
+    files = sorted(p for p in path.iterdir() if p.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp"))
+    if not files:
+        raise SystemExit(f"--faces: no .jpg/.png/.webp images in {path}")
+
+    faces = [ImageOps.exif_transpose(Image.open(p)).convert("RGB") for p in files]
+    if len(faces) < FACE_SLOTS:
+        # Cycling is still better than no faces at all, so warn rather than refuse.
+        collide = sorted(GENUINE_SLOTS[s] for s in GENUINE_SLOTS if s % len(faces) != s)
+        print(f"warning: {len(faces)} photo(s) for {FACE_SLOTS} slots, so they repeat.")
+        if collide:
+            print("         These genuine cases will share a face with an earlier case and may be")
+            print("         flagged for face reuse: " + ", ".join(collide))
+        print(f"         Supply {FACE_SLOTS} different people to avoid this.")
+    return (faces * FACE_SLOTS)[:FACE_SLOTS]
 
 
 def main() -> None:

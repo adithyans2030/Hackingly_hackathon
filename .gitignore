@@ -15,3 +15,7 @@ dist/
 
 # Dev-only Aadhaar Secure QR signing material (scripts/make_dev_cert.py)
 dev_certs/
+
+# Teammate photos for the face-matching demo (never commit real faces)
+my_faces/
+samples/*_selfie.jpg
