@@ -3,8 +3,11 @@ uvicorn[standard]>=0.27
 python-multipart>=0.0.9
 pydantic>=2.5
 opencv-python-headless>=4.9,<5
-numpy>=1.26
-Pillow>=10.2
+# Pinned exactly: both decide the exact bytes generate_samples.py writes, so a
+# version drift changes every specimen card and can shift OCR results between
+# machines. Bump deliberately and re-run scripts/evaluate.py.
+numpy==2.5.3
+Pillow==12.3.0
 pytesseract>=0.3.10
 requests>=2.31
 python-dotenv>=1.0
