@@ -108,15 +108,64 @@ def valid(body: bytes, header: str, secret: str) -> bool:
     return hmac.compare_digest(good, header)
 ```
 
+### Polling instead of waiting for the webhook
+
+A webhook can be missed: the endpoint is down, the delivery is dropped, or the caller
+simply has nowhere public to receive one. `GET /v1/verifications/{id}/status` answers the
+same question on demand, so an async caller is never stuck without an answer.
+
+```bash
+curl $TG/v1/verifications/v_3f0c9a1b2d4e5f60/status -H "X-API-Key: $KEY"
+```
+
+While the pipeline is running:
+
+```json
+{ "verification_id": "v_3f0c9a1b2d4e5f60", "status": "processing" }
+```
+
+Once it finishes, the same slim payload `detail=false` returns, plus `status`:
+
+```json
+{
+  "verification_id": "v_3f0c9a1b2d4e5f60",
+  "status": "done",
+  "decision": "NEEDS_REVIEW",
+  "confidence": 0.51,
+  "summary": "Needs a quick human check. ...",
+  "reasons": ["..."],
+  "participant_message": "Thanks! Your ID is being reviewed by the organizers.",
+  "extracted": { "...": "..." },
+  "applicant": { "...": "..." }
+}
+```
+
+`status` is `processing`, `done` or `error`; an `error` still carries a `NEEDS_REVIEW`
+decision, because a crash in the pipeline must never reject a participant. Poll every
+second or two — a synchronous check takes roughly 2 s on CPU. Unknown ids return `404`.
+
+It is guarded by `X-API-Key`, the same key as `/v1/verify`, since it belongs to the
+registration flow rather than the organizer dashboard, and it never returns the forensic
+detail (`signals`, artifact URLs, `aadhaar_qr`) that `GET /v1/verifications/{id}` does.
+
 ## 5. Other endpoints
 
-| method | path | purpose |
-|---|---|---|
-| POST | `/v1/quality-check` | instant blur/glare/size feedback before submit |
-| GET | `/v1/verifications?event_id=&decision=&q=` | queue |
-| GET | `/v1/verifications/{id}` | full result |
-| POST | `/v1/verifications/{id}/review` | `{decision, note, reviewer}` human override (audited) |
-| DELETE | `/v1/verifications/{id}` | right to erasure (record, fingerprints, face embedding, images) |
-| GET | `/v1/metrics?event_id=` | automation rate, overrides, top flags, latency, test-set results |
-| GET | `/v1/audit` | audit log |
-| GET | `/docs` | OpenAPI UI |
+| method | path | auth | purpose |
+|---|---|---|---|
+| POST | `/v1/quality-check` | — | instant blur/glare/size feedback before submit |
+| GET | `/v1/verifications/{id}/status` | `X-API-Key` | poll an async verification |
+| GET | `/v1/verifications?event_id=&decision=&q=` | `X-Organizer-Key` | queue |
+| GET | `/v1/verifications/{id}` | `X-Organizer-Key` | full result |
+| POST | `/v1/verifications/{id}/review` | `X-Organizer-Key` | `{decision, note, reviewer}` human override (audited) |
+| DELETE | `/v1/verifications/{id}` | `X-API-Key` | right to erasure (record, fingerprints, face embedding, images) |
+| GET | `/v1/metrics?event_id=` | `X-Organizer-Key` | automation rate, overrides, top flags, latency, test-set results |
+| GET | `/v1/audit` | `X-Organizer-Key` | audit log |
+| GET | `/v1/health` | — | liveness plus the active providers |
+| GET | `/docs` | — | OpenAPI UI |
+
+**Two keys, two audiences.** `API_KEY` (header `X-API-Key`) guards the registration
+flow: `/v1/verify`, its status endpoint, event configuration and erasure. `ORGANIZER_KEY`
+(header `X-Organizer-Key`) guards the organizer surface — the review queue, case detail,
+stored ID images, metrics and the audit log — because those expose applicants' names,
+emails, masked ID numbers and photographs. Either key left unset disables that check, so
+set both before real participant data is loaded.
