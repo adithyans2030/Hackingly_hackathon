@@ -29,6 +29,10 @@ from app.providers.ocr import get_ocr
 log = logging.getLogger(__name__)
 PIPELINE_VERSION = "1.0.0"
 
+# Below this OCR confidence the printed name is treated as unread rather than as a
+# different name, so a bad read can never masquerade as tampering.
+NAME_OCR_MIN_CONFIDENCE = 0.5
+
 
 @dataclass
 class Applicant:
@@ -174,11 +178,20 @@ def _validity_signals(ex: extraction.Extracted, qr) -> list[Signal]:
                     sig.append(Signal("aadhaar_qr_number", "tamper", "pass", 0.95,
                                       "Printed Aadhaar number matches the QR code.", weight=1.0))
         if qr and qr.name and ex.name.value:
-            s, _ = identity.name_similarity(qr.name, ex.name.value)
-            if s < 70:
-                sig.append(Signal("aadhaar_qr_name", "tamper", "critical", 0.05,
-                                  f"Name printed on the card (“{ex.name.value}”) doesn't match the QR code "
-                                  f"(“{qr.name}”).", weight=2.5))
+            # Only compare when the printed name was actually read. A garbled OCR result
+            # ("Cyl" for "Arjun Ramesh") is an extraction failure, not evidence that the
+            # card was edited, and must never raise a critical tamper signal on a genuine
+            # participant. Below the threshold we say the check couldn't run.
+            if ex.name.confidence < NAME_OCR_MIN_CONFIDENCE or len(ex.name.value.strip()) < 4:
+                sig.append(Signal("aadhaar_qr_name", "tamper", "info", 0.6,
+                                  "The printed name couldn't be read clearly, so it wasn't compared with the "
+                                  "QR code. The signed QR name is used instead.", weight=0.3))
+            else:
+                s, _ = identity.name_similarity(qr.name, ex.name.value)
+                if s < 70:
+                    sig.append(Signal("aadhaar_qr_name", "tamper", "critical", 0.05,
+                                      f"Name printed on the card (“{ex.name.value}”) doesn't match the QR code "
+                                      f"(“{qr.name}”).", weight=2.5))
         if qr is None:
             sig.append(Signal("aadhaar_qr_match", "tamper", "info", 0.6,
                               "Aadhaar QR code not readable in this photo, so printed details couldn't be "
@@ -304,8 +317,15 @@ def verify(vid: str, event: rules.EventConfig, applicant: Applicant, id_image: b
     qr = aadhaar_qr.read(bgr) if ex.doc_type in ("AADHAAR", "UNKNOWN") else None
     if qr and ex.doc_type == "UNKNOWN":
         ex.doc_type, ex.doc_type_confidence = "AADHAAR", 0.8
-    if qr and not ex.name.value and qr.name:
-        ex.name = extraction.Field(qr.name, 0.85, f"aadhaar_qr_{qr.kind}")
+    # A UIDAI-signed name outranks OCR: the signature proves the QR wasn't edited, while
+    # the printed name is whatever Tesseract managed to read off a phone photo. Comparing
+    # the form name against the signed name is also a stronger identity check than
+    # comparing it against the print, and it still catches an edited printed name.
+    if qr and qr.name and (not ex.name.value or (qr.signature_verified
+                                                 and ex.name.confidence < NAME_OCR_MIN_CONFIDENCE)):
+        signed = qr.signature_verified is True
+        ex.name = extraction.Field(qr.name, 0.95 if signed else 0.85,
+                                   f"aadhaar_qr_{qr.kind}{'_signed' if signed else ''}")
     t = lap("qr", t)
 
     # 5. DOB resolution + validators ------------------------------------------------------

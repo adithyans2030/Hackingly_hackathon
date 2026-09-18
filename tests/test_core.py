@@ -4,6 +4,7 @@ import sys
 import tempfile
 from datetime import date
 from pathlib import Path
+import pytest
 
 _tmp = tempfile.mkdtemp()
 os.environ.setdefault("DATA_DIR", _tmp)
@@ -69,7 +70,33 @@ def test_secure_qr_roundtrip():
     payload = aadhaar_qr.build_secure_payload("Priya Sharma", "14-03-2002", "F", "4821")
     q = aadhaar_qr.parse_secure(payload)
     assert q and q.name == "Priya Sharma" and q.dob == "14-03-2002" and q.last4 == "4821"
-    assert q.signature_verified is None  # no cert configured
+    # None when no certificate is configured, True when the dev cert is in use.
+    # False would mean a genuine payload failed verification, which must never happen.
+    assert q.signature_verified is not False
+
+
+@pytest.mark.skipif(not aadhaar_qr.DEV_KEY_PATH.exists(),
+                    reason="run scripts/make_dev_cert.py to exercise signature verification")
+def test_secure_qr_signature_detects_tampering():
+    """The signed QR is the anchor of the whole design, so prove it actually holds.
+
+    A forger who edits a field inside the payload cannot re-sign it, so verification
+    must fail even though the edited payload still parses cleanly.
+    """
+    import zlib
+
+    payload = aadhaar_qr.build_secure_payload("Priya Sharma", "14-03-2002", "F", "4821")
+    assert aadhaar_qr.parse_secure(payload).signature_verified is True
+
+    n = int(payload)
+    data = zlib.decompress(n.to_bytes((n.bit_length() + 7) // 8, "big"), 16 + zlib.MAX_WBITS)
+    tampered = data.replace(b"14-03-2002", b"14-03-1998")
+    comp = zlib.compressobj(9, zlib.DEFLATED, 16 + zlib.MAX_WBITS)
+    forged = str(int.from_bytes(comp.compress(tampered) + comp.flush(), "big"))
+
+    q = aadhaar_qr.parse_secure(forged)
+    assert q.dob == "14-03-1998"          # the edit is visible ...
+    assert q.signature_verified is False  # ... and the signature no longer holds
 
 
 def test_legacy_xml_qr():

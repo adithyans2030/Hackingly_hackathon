@@ -19,9 +19,16 @@ from xml.etree import ElementTree as ET
 import cv2
 import numpy as np
 
-from app.config import settings
+from app.config import ROOT, settings
 
 log = logging.getLogger(__name__)
+
+# Development-only Secure QR signing material, created by scripts/make_dev_cert.py.
+# Never used in production: there UIDAI_CERT_PATH points at UIDAI's own certificate,
+# and these dev-signed payloads correctly fail to verify.
+DEV_CERT_DIR = ROOT / "dev_certs"
+DEV_KEY_PATH = DEV_CERT_DIR / "uidai_dev_key.pem"
+DEV_CERT_PATH = DEV_CERT_DIR / "uidai_dev_cert.pem"
 
 SECURE_FIELDS = ["email_mobile_indicator", "reference_id", "name", "dob", "gender", "care_of",
                  "district", "landmark", "house", "location", "pincode", "post_office", "state",
@@ -133,7 +140,10 @@ def parse_secure(payload: str) -> AadhaarQR | None:
     # locate where text fields end, the remainder is photo + (optional hashes) + signature
     text_len = sum(len(p) + 1 for p in parts[: offset + n_fields])
     tail = data[text_len:]
-    signature = data[-256:] if len(data) > 256 + text_len else b""
+    # ">=", not ">": a payload carrying no photo is exactly text + 256 signature bytes.
+    # With a strict ">" the signature was never extracted for photo-less cards, so the
+    # strongest check in the pipeline silently reported "not checked".
+    signature = data[-256:] if len(data) >= 256 + text_len else b""
     photo = tail[:-256] if len(tail) > 256 else b""
     ref = fields.get("reference_id", "")
     dob = fields.get("dob", "")
@@ -174,13 +184,33 @@ def read(bgr: np.ndarray) -> AadhaarQR | None:
 
 
 # ---------------------------------------------------------------------------
-# Test helper: build an (unsigned) Secure-QR-format payload. Used by sample generator.
+# Test helper: build a Secure-QR-format payload. Used by the sample generator.
 # ---------------------------------------------------------------------------
+def _dev_sign(body: bytes) -> bytes:
+    """Sign a sample payload with the development key, if one has been generated.
+
+    Returns 256 zero bytes when no dev key exists, which is what the generator used
+    to emit unconditionally. Those payloads parse but never verify, so the signature
+    check stays "not checked" rather than reporting a false tamper.
+    """
+    if not DEV_KEY_PATH.exists():
+        return b"\x00" * 256
+    try:
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import padding
+
+        key = serialization.load_pem_private_key(DEV_KEY_PATH.read_bytes(), password=None)
+        return key.sign(body, padding.PKCS1v15(), hashes.SHA256())
+    except Exception as e:  # a broken dev key must not break sample generation
+        log.warning("Dev QR signing failed (%s); emitting an unsigned payload", e)
+        return b"\x00" * 256
+
+
 def build_secure_payload(name: str, dob: str, gender: str, last4: str, version: str = "V2") -> str:
     ref = f"{last4}20260101120000000"
     values = ["0", ref, name, dob, gender, "", "Bengaluru", "", "", "", "560034", "", "Karnataka", "", "", ""]
     body = b"\xff".join([version.encode()] + [v.encode() for v in values]) + b"\xff"
-    body += b"\x00" * 256  # placeholder signature (unsigned test payload)
+    body += _dev_sign(body)
     comp = zlib.compressobj(9, zlib.DEFLATED, 16 + zlib.MAX_WBITS)
     gz = comp.compress(body) + comp.flush()
     return str(int.from_bytes(gz, "big"))

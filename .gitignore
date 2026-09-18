@@ -12,3 +12,6 @@ frontend/dist/
 dist/
 .DS_Store
 *.log
+
+# Dev-only Aadhaar Secure QR signing material (scripts/make_dev_cert.py)
+dev_certs/

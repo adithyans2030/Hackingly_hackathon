@@ -34,6 +34,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 log = logging.getLogger("trustgate")
 
 API_KEY = os.getenv("API_KEY", "").split("#")[0].strip()
+ORGANIZER_KEY = os.getenv("ORGANIZER_KEY", "").split("#")[0].strip()
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", settings.hmac_secret)
 MAX_UPLOAD = 10 * 1024 * 1024
 STATIC = Path(__file__).parent / "static"
@@ -52,6 +53,18 @@ _pipeline_lock = threading.Semaphore(int(os.getenv("PIPELINE_CONCURRENCY", "2"))
 def require_key(x_api_key: str = Header(default="")) -> None:
     if API_KEY and not hmac.compare_digest(x_api_key, API_KEY):
         raise HTTPException(401, "Invalid or missing X-API-Key")
+
+
+def require_organizer(x_organizer_key: str = Header(default="")) -> None:
+    """Guard the organizer surface: the review queue, case detail, artifacts and audit log.
+
+    These expose every applicant's name, email, masked ID and ID photograph, so they are
+    the most sensitive endpoints in the service. Set ORGANIZER_KEY to require a header;
+    left unset the dashboard stays open, which is fine for a laptop demo and is not
+    acceptable once real participant data is loaded.
+    """
+    if ORGANIZER_KEY and not hmac.compare_digest(x_organizer_key, ORGANIZER_KEY):
+        raise HTTPException(401, "Invalid or missing X-Organizer-Key")
 
 
 DEFAULT_EVENTS = [
@@ -241,7 +254,7 @@ async def quality_check(image: UploadFile = File(...)):
     return quality.quick_check(data)
 
 
-@app.get("/v1/verifications")
+@app.get("/v1/verifications", dependencies=[Depends(require_organizer)])
 def list_verifications(event_id: str | None = None, decision: str | None = Query(None),
                        q: str | None = None, limit: int = 200):
     if decision and decision not in DECISIONS:
@@ -249,7 +262,29 @@ def list_verifications(event_id: str | None = None, decision: str | None = Query
     return db.list_verifications(event_id, decision, q, min(limit, 500))
 
 
-@app.get("/v1/verifications/{vid}")
+@app.get("/v1/verifications/{vid}/status", dependencies=[Depends(require_key)])
+def verification_status(vid: str):
+    """Poll an async verification.
+
+    async_mode=true returns 202 and then delivers the result by webhook. A caller that
+    cannot receive webhooks (a local integration, a retry after a missed delivery) had
+    no way to find out what happened; this closes that hole.
+
+    Guarded by the same key as /v1/verify, since it is part of the registration flow
+    rather than the organizer surface, and it returns the slim public payload only.
+    """
+    v = db.get_verification(vid)
+    if not v:
+        raise HTTPException(404, "Verification not found")
+    out = {"verification_id": vid, "status": v["status"]}
+    if v["status"] == "processing":
+        return out
+    result = v.get("result") or {}
+    return {**out, **_sanitize_for_json(_public({**result, "verification_id": vid,
+                                                 "event_id": v["event_id"]}))}
+
+
+@app.get("/v1/verifications/{vid}", dependencies=[Depends(require_organizer)])
 def get_verification(vid: str):
     v = db.get_verification(vid)
     if not v:
@@ -263,7 +298,7 @@ class ReviewIn(BaseModel):
     reviewer: str = "organizer"
 
 
-@app.post("/v1/verifications/{vid}/review")
+@app.post("/v1/verifications/{vid}/review", dependencies=[Depends(require_organizer)])
 def review(vid: str, body: ReviewIn):
     if body.decision not in DECISIONS:
         raise HTTPException(422, f"decision must be one of {DECISIONS}")
@@ -288,7 +323,8 @@ def erase(vid: str):
     return {"deleted": vid}
 
 
-@app.get("/v1/verifications/{vid}/artifacts/{name}", include_in_schema=False)
+@app.get("/v1/verifications/{vid}/artifacts/{name}", include_in_schema=False,
+         dependencies=[Depends(require_organizer)])
 def artifact(vid: str, name: str):
     # `name`/`vid` must be a bare filename with no directory component. Checking only for
     # "/" and ".." is not enough on Windows: an absolute path like "C:\\Windows\\win.ini" or
@@ -306,7 +342,7 @@ def artifact(vid: str, name: str):
 # ---------------------------------------------------------------------------
 # metrics
 # ---------------------------------------------------------------------------
-@app.get("/v1/metrics")
+@app.get("/v1/metrics", dependencies=[Depends(require_organizer)])
 def metrics(event_id: str | None = None):
     rows = db.list_verifications(event_id, None, None, 5000)
     done = [r for r in rows if r["status"] != "processing"]
@@ -338,7 +374,7 @@ def metrics(event_id: str | None = None):
     }
 
 
-@app.get("/v1/audit")
+@app.get("/v1/audit", dependencies=[Depends(require_organizer)])
 def audit_log(limit: int = 100):
     rows = db.conn().execute("SELECT * FROM audit_log ORDER BY id DESC LIMIT ?", (min(limit, 1000),)).fetchall()
     return [{k: r[k] for k in r.keys()} for r in rows]
