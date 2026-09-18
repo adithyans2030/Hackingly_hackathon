@@ -11,7 +11,7 @@ export default function NotFound() {
           Document Record Not Found
         </h1>
         <p style={{ fontSize: '1rem', color: 'var(--ink-2, #4A5470)', marginBottom: 28, lineHeight: 1.6 }}>
-          The verification ID or route you requested does not exist in the TrustGate registry. Please check the URL or return to the review dashboard.
+          The verification ID or route you requested does not exist in the BrickWall registry. Please check the URL or return to the review dashboard.
         </p>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
           <Link to="/" className="btn-stamp-primary">
